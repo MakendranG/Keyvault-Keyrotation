@@ -1,0 +1,77 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vaultName": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the key vault to be created."
+            }
+        },
+        "keyName": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the key to be created."
+            }
+        },
+        "rotatationTimeAfterCreate": {
+            "defaultValue": "P18M",
+            "type": "String",
+            "metadata": {
+                "description": "Time duration to trigger key rotation. i.e. P30D, P1M, P2Y"
+            }
+        },
+        "expiryTime": {
+            "defaultValue": "P2Y",
+            "type": "String",
+            "metadata": {
+                "description": "The expiry time for new key version. i.e. P90D, P2M, P3Y"
+            }
+        },
+        "notifyTime": {
+            "defaultValue": "P30D",
+            "type": "String",
+            "metadata": {
+                "description": "Near expiry Event Grid notification. i.e. P30D"
+            }
+        }
+
+    },
+    "resources": [
+        {
+            "type": "Microsoft.KeyVault/vaults/keys",
+            "apiVersion": "2021-06-01-preview",
+            "name": "[concat(parameters('vaultName'), '/', parameters('keyName'))]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "vaultName": "[parameters('vaultName')]",
+                "kty": "RSA",
+                "rotationPolicy": {
+                    "lifetimeActions": [
+                        {
+                            "trigger": {
+                                "timeAfterCreate": "[parameters('rotatationTimeAfterCreate')]",
+                                "timeBeforeExpiry": ""
+                            },
+                            "action": {
+                                "type": "Rotate"
+                            }
+                        },
+                        {
+                            "trigger": {
+                                "timeBeforeExpiry": "[parameters('notifyTime')]"
+                            },
+                            "action": {
+                                "type": "Notify"
+                            }
+                        }
+
+                    ],
+                    "attributes": {
+                        "expiryTime": "[parameters('expiryTime')]"
+                    }
+                }
+            }
+        }
+    ]
+}
